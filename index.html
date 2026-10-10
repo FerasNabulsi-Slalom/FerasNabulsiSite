@@ -3,17 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Feras Nabulsi — Platform Design Director</title>
-  <meta name="description" content="Feras Nabulsi is a Platform Design Director designing systems, platforms and experiences that scale.">
+  <title>Feras Nabulsi — Director of Platform Design, CX</title>
+  <meta name="description" content="Feras Nabulsi is a Director of Platform Design, CX, designing systems, platforms and experiences that scale.">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=3">
+  <style>
+    /* Profile picture on the left, weather card on the right */
+    .hero-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+    @media (max-width: 760px) { .hero-top { flex-wrap: nowrap; } .weather { min-width: 0; } }
+
+    /* Weather widget (self-contained; falls back if theme variables are missing) */
+    .weather {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: fit-content;
+      min-width: 195px;
+      margin: 0;
+      padding: 11px 17px 11px 14px;
+      border: 1px solid var(--border, rgba(255,255,255,.1));
+      border-radius: var(--radius, 20px);
+      background: var(--surface, rgba(255,255,255,.04));
+      backdrop-filter: blur(14px);
+      transition: transform .3s, border-color .3s, background .3s;
+    }
+    .weather:hover { transform: translateY(-4px); border-color: var(--accent, #8b7bff); background: rgba(139,123,255,.07); }
+    .weather-icon { font-size: 2.1rem; line-height: 1; }
+    .weather-temp {
+      font-family: var(--serif, Georgia, serif);
+      font-size: 1.95rem;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, var(--accent, #8b7bff), var(--accent-2, #ff8fb1));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .weather-desc { margin-top: 3px; font-size: .72rem; color: var(--text, #f2f1f7); }
+    .weather-meta { font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted, #a3a2b5); }
+    .weather-msg { font-size: .72rem; color: var(--muted, #a3a2b5); max-width: 195px; }
+    .weather-retry {
+      margin-top: 4px; padding: 0; border: 0; background: none; cursor: pointer;
+      font: inherit; font-size: .72rem; color: var(--accent, #8b7bff); text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
   <div class="glow glow-a" aria-hidden="true"></div>
-  <div class="glow glow-b" aria-hidden="true"></div>
+  <div class="glow glow-b" aria-hidden="true"></div> 
 
   <header class="nav">
     <a href="#top" class="logo" aria-label="Feras Nabulsi, home">FN<span>.</span></a>
@@ -28,7 +68,16 @@
 
   <main id="top">
     <section class="hero">
-      <p class="eyebrow reveal">Platform Design Director</p>
+      <div class="hero-top">
+      <div class="avatar reveal" style="width:100px;height:100px;flex:none;border-radius:50%;overflow:hidden;border:3px solid #fff;box-sizing:border-box;margin-bottom:20px;"><img src="assets/images/feras.png" alt="Portrait of Feras Nabulsi" width="100" height="100" style="display:block;width:100%;height:100%;max-width:100%;object-fit:cover;object-position:center 20%;"></div>
+      <aside class="weather reveal" id="weather" aria-live="polite" aria-label="Current weather">
+        <span class="weather-icon" aria-hidden="true">🌡️</span>
+        <div>
+          <p class="weather-msg">Checking the weather where you are…</p>
+        </div>
+      </aside>
+      </div>
+      <p class="eyebrow reveal">Director of Platform Design, CX</p>
       <h1 class="reveal">Designing platforms<br>that people <em>and teams</em><br>love to build on.</h1>
       <p class="lead reveal">I'm Feras. I lead design for the systems underneath great products: the patterns, tooling and ways of working that let many teams ship coherent experiences at scale.</p>
       <div class="cta reveal">
@@ -139,5 +188,95 @@
   </footer>
 
   <script src="js/main.js"></script>
+  <script>
+    // Weather widget: Open-Meteo (no API key) using the browser's location
+    (function () {
+      const card = document.getElementById('weather');
+      if (!card) return;
+
+      // WMO weather codes -> [day emoji, night emoji, label]
+      function describe(code, isDay) {
+        if (code === 0) return isDay ? ['☀️', 'Clear sky'] : ['🌙', 'Clear night'];
+        if (code === 1 || code === 2) return [isDay ? '🌤️' : '☁️', 'Partly cloudy'];
+        if (code === 3) return ['☁️', 'Overcast'];
+        if (code === 45 || code === 48) return ['🌫️', 'Foggy'];
+        if (code >= 51 && code <= 57) return ['🌦️', 'Drizzle'];
+        if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return ['🌧️', 'Rain'];
+        if ((code >= 71 && code <= 77) || code === 85 || code === 86) return ['❄️', 'Snow'];
+        if (code >= 95) return ['⛈️', 'Thunderstorm'];
+        return ['🌡️', 'Current weather'];
+      }
+
+      function show(icon, html) {
+        card.innerHTML = '<span class="weather-icon" aria-hidden="true">' + icon + '</span><div>' + html + '</div>';
+      }
+
+      function showMessage(text, canRetry) {
+        show('🌡️', '<p class="weather-msg">' + text + '</p>' +
+          (canRetry ? '<button type="button" class="weather-retry">Try again</button>' : ''));
+        const btn = card.querySelector('.weather-retry');
+        if (btn) btn.addEventListener('click', load);
+      }
+
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+      }
+
+      // Fallback when the browser can't provide a position: approximate location from IP (no key, CORS-enabled)
+      async function ipLocation() {
+        const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const g = await res.json();
+        const lat = parseFloat(g.latitude), lon = parseFloat(g.longitude);
+        if (isNaN(lat) || isNaN(lon)) throw new Error('No coordinates');
+        return { lat, lon, place: [g.city, g.region].filter(Boolean).join(', ') };
+      }
+
+      async function fetchWeather(lat, lon, place) {
+        const url = 'https://api.open-meteo.com/v1/forecast' +
+          '?latitude=' + lat.toFixed(4) + '&longitude=' + lon.toFixed(4) +
+          '&current=temperature_2m,weather_code,is_day' +
+          '&temperature_unit=fahrenheit&timezone=auto';
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        const c = data.current;
+        const [icon, label] = describe(c.weather_code, c.is_day === 1);
+        show(icon,
+          '<div class="weather-meta">' + (place ? esc(place) : 'Right now near you') + '</div>' +
+          '<div class="weather-temp">' + Math.round(c.temperature_2m) + '°F</div>' +
+          '<div class="weather-desc">' + label + '</div>');
+      }
+
+      function load() {
+        showMessage('Checking the weather where you are…', false);
+
+        const fallback = (reason) => {
+          console.warn('Browser location unavailable (' + reason + '); using approximate IP location.');
+          ipLocation()
+            .then((loc) => fetchWeather(loc.lat, loc.lon, loc.place))
+            .catch((e) => {
+              console.error('Weather fallback failed:', e);
+              showMessage('Couldn’t load the weather right now.', true);
+            });
+        };
+
+        if (!('geolocation' in navigator)) return fallback('unsupported');
+        navigator.geolocation.getCurrentPosition(
+          (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude)
+            .catch((e) => {
+              console.error('Open-Meteo request failed:', e);
+              showMessage('Couldn’t load the weather right now.', true);
+            }),
+          (err) => err.code === 1
+            ? showMessage('Enable location to see your weather 🌤️', true)
+            : fallback('code ' + err.code + ': ' + err.message),
+          { timeout: 8000, maximumAge: 600000 }
+        );
+      }
+
+      load();
+    })();
+  </script>
 </body>
 </html>
